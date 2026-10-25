@@ -1,3 +1,4 @@
-# IMU Test
+# IMU Data
 
-A simple test for IMU sensors.
+Displays raw accelerometer and gyroscope data on the M5 StickS3.
+Useful for understanding what the sensors report!
