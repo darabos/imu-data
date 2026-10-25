@@ -8,8 +8,8 @@
 
 constexpr uint32_t DISPLAY_REFRESH_MS = 33;
 constexpr size_t SENSOR_HISTORY_SIZE = 240;
-constexpr float ACCEL_PLOT_RANGE_G = 2.0f;
-constexpr float GYRO_PLOT_RANGE_DPS = 500.0f;
+constexpr float ACCEL_PLOT_RANGE_G = 8.0f;
+constexpr float GYRO_PLOT_RANGE_DPS = 2000.0f;
 constexpr const char *AXIS_LABELS[] = {"X", "Y", "Z"};
 constexpr uint16_t AXIS_COLORS[] = {TFT_RED, TFT_GREEN, TFT_BLUE};
 
@@ -29,13 +29,14 @@ void drawStatus()
         return;
     }
     displayBuffer.fillSprite(TFT_BLACK);
-    char label[32];
+    char label[64];
     const float latestSample = sensorSampleCount == 0
                                    ? 0.0f
                                    : sensorHistory[(nextSensorSample + SENSOR_HISTORY_SIZE - 1) % SENSOR_HISTORY_SIZE];
     const float plotRange = showGyroscope ? GYRO_PLOT_RANGE_DPS : ACCEL_PLOT_RANGE_G;
     std::snprintf(label, sizeof(label), "%s %s  %.2f %s", showGyroscope ? "GYRO" : "ACCEL",
                   AXIS_LABELS[selectedAxis], latestSample, showGyroscope ? "dps" : "g");
+    displayBuffer.setTextDatum(ML_DATUM);
     displayBuffer.setTextColor(TFT_WHITE, TFT_BLACK);
     displayBuffer.drawString(label, 4, 4);
 
@@ -49,6 +50,11 @@ void drawStatus()
     {
         const int y = graphTop + gridLine * graphHeight / 4;
         displayBuffer.drawFastHLine(graphLeft, y, graphWidth, gridLine == 2 ? TFT_DARKGREY : 0x3186);
+        displayBuffer.fillRect(graphLeft, y - 8, 25, 16, TFT_BLACK);
+        displayBuffer.setTextColor(TFT_DARKGREY, TFT_BLACK);
+        char tickLabel[12];
+        std::snprintf(tickLabel, sizeof(tickLabel), "%d", static_cast<int>(plotRange * (2 - gridLine) / 4));
+        displayBuffer.drawString(tickLabel, graphLeft + 10, y);
     }
 
     if (sensorSampleCount > 0)
@@ -59,9 +65,7 @@ void drawStatus()
         for (size_t index = 0; index < sensorSampleCount; ++index)
         {
             const int x = graphLeft + static_cast<int>(index * graphWidth / std::max<size_t>(sensorSampleCount - 1, 1));
-            const float sample = std::max(-plotRange,
-                                           std::min(sensorHistory[(oldestSample + index) % SENSOR_HISTORY_SIZE],
-                                                    plotRange));
+            const float sample = sensorHistory[(oldestSample + index) % SENSOR_HISTORY_SIZE];
             const int y = graphTop + static_cast<int>((plotRange - sample) * graphHeight / (2.0f * plotRange));
             if (index > 0)
             {
